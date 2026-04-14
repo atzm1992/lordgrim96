@@ -98,7 +98,10 @@
 
   const gymDays = JSON.parse(localStorage.getItem("gymDays")) || {};
 
-  function renderCalendar() {
+  window.renderCalendar = function () {
+  ...
+}
+
     calendarEl.innerHTML = "";
 
     const year = date.getFullYear();

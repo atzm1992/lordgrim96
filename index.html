@@ -156,7 +156,7 @@
 
 
 <!-- PATCH START -->
-<!-- ===== PATCH: Gym-Besuche pro Monat anzeigen ===== -->
+<!-- ===== PATCH: Monats-Gym-Zähler (LIVE, ohne Reload) ===== -->
 
 <p id="monthlyGymCount" style="
   text-align: center;
@@ -172,50 +172,45 @@
   const counterEl = document.getElementById("monthlyGymCount");
   if (!counterEl) return;
 
-  function updateMonthlyGymCount() {
+  function calculateCount() {
     const gymDays = JSON.parse(localStorage.getItem("gymDays")) || {};
-    const monthLabel = document.getElementById("monthYear");
-    if (!monthLabel) return;
+    const label = document.getElementById("monthYear");
+    if (!label) return;
 
-    // Beispiel: "April 2026"
-    const [monthName, yearText] = monthLabel.textContent.trim().split(" ");
+    const [monthName, yearText] = label.textContent.trim().split(" ");
     const year = parseInt(yearText, 10);
 
-    const monthMap = {
+    const months = {
       Januar: 1, Februar: 2, März: 3, April: 4,
       Mai: 5, Juni: 6, Juli: 7, August: 8,
       September: 9, Oktober: 10, November: 11, Dezember: 12
     };
 
-    const month = monthMap[monthName];
+    const month = months[monthName];
     let count = 0;
 
     for (const key in gymDays) {
       const [y, m] = key.split("-").map(Number);
-      if (y === year && m === month) {
-        count++;
-      }
+      if (y === year && m === month) count++;
     }
 
     counterEl.textContent =
       `Im Monat war ich ${count}‑mal im Gym`;
   }
 
-  // ✅ An renderCalendar anhängen (wichtig!)
+  // ✅ renderCalendar erweitern (nicht ersetzen!)
   if (typeof window.renderCalendar === "function") {
-    const originalRender = window.renderCalendar;
+    const oldRender = window.renderCalendar;
     window.renderCalendar = function () {
-      originalRender();
-      updateMonthlyGymCount();
+      oldRender();
+      calculateCount(); // 🔥 JEDES MAL neu zählen
     };
   }
 
-  updateMonthlyGymCount();
 })();
 </script>
 
 <!-- ===== PATCH ENDE ===== -->
-``
 <!-- PATCH END -->
 </body>
 </html>

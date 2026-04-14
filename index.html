@@ -154,5 +154,44 @@
   renderCalendar();
 </script>
 
+
+<!-- PATCH START -->
+<!-- ===== PATCH: Wochentage (Mo–So) anzeigen ===== -->
+
+<style>
+  .weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 6px;
+  }
+</style>
+
+<div class="weekdays" id="weekdayRow">
+  <div>Mo</div>
+  <div>Di</div>
+  <div>Mi</div>
+  <div>Do</div>
+  <div>Fr</div>
+  <div>Sa</div>
+  <div>So</div>
+</div>
+
+<script>
+(function () {
+  const calendar = document.getElementById("calendar");
+  const weekdays = document.getElementById("weekdayRow");
+
+  if (!calendar || !weekdays) return;
+
+  // Wochentage DIREKT vor den Kalender setzen
+  calendar.parentNode.insertBefore(weekdays, calendar);
+})();
+</script>
+
+<!-- ===== PATCH ENDE ===== -->
+
+<!-- PATCH END -->
 </body>
 </html>

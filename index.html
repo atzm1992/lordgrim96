@@ -161,6 +161,56 @@ alert("Gym‑Zähler aktiv!");
 </script>
 
 <!-- PATCH END -->
+
+<!-- PATCH START -->
+<!-- ===== PATCH: Gym Monats-Zähler ===== -->
+
+<p id="gymCounter" style="
+  text-align: center;
+  font-weight: bold;
+  margin-top: 15px;
+  font-size: 18px;
+">
+  GYM besucht: 0‑mal im Monat
+</p>
+
+<script>
+  (function () {
+    const gymCounterEl = document.getElementById("gymCounter");
+
+    if (!gymCounterEl) return;
+
+    const gymDays =
+      JSON.parse(localStorage.getItem("gymDays")) || {};
+
+    function updateGymCounter() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth() + 1;
+
+      let count = 0;
+
+      for (const key in gymDays) {
+        const [y, m] = key.split("-").map(Number);
+        if (y === year && m === month) {
+          count++;
+        }
+      }
+
+      gymCounterEl.textContent =
+        `GYM besucht: ${count}‑mal im Monat`;
+    }
+
+    updateGymCounter();
+
+    // 🔁 Aktualisieren, falls Kalender neu gerendert wird
+    window.addEventListener("storage", updateGymCounter);
+  })();
+</script>
+
+<!-- ===== PATCH ENDE ===== -->
+
+<!-- PATCH END -->
 </body>
 </html>
 ``

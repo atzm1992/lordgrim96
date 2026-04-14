@@ -156,7 +156,7 @@
 
 
 <!-- PATCH START -->
-<!-- ===== FINAL PATCH: Gym Monats-Zähler (einzig & korrekt) ===== -->
+<!-- ===== PATCH: Gym-Zähler (direkt an renderCalendar gekoppelt) ===== -->
 
 <p id="gymMonthCounter" style="
   text-align: center;
@@ -169,20 +169,29 @@
 
 <script>
 (function () {
-  const counterEl = document.getElementById("gymMonthCounter");
-  if (!counterEl) return;
 
-  // Gym-Daten aus localStorage
-  function getGymDays() {
-    return JSON.parse(localStorage.getItem("gymDays")) || {};
+  // Wir prüfen, ob renderCalendar existiert
+  if (typeof renderCalendar !== "function") {
+    console.error("renderCalendar nicht gefunden – Patch nicht aktiv");
+    return;
   }
 
-  // Aktuellen Monat aus Kalender lesen (z. B. „April 2026“)
-  function getShownMonthYear() {
-    const label = document.getElementById("monthYear");
-    if (!label) return null;
+  const counterEl = document.getElementById("gymMonthCounter");
+  const originalRender = renderCalendar;
 
-    const [monthName, yearStr] = label.textContent.trim().split(" ");
+  // 🔁 renderCalendar erweitern (NICHT ersetzen!)
+  window.renderCalendar = function () {
+
+    // Original ausführen
+    originalRender();
+
+    // Jetzt zählen wir exakt das, was gerendert wurde
+    const gymDays = JSON.parse(localStorage.getItem("gymDays")) || {};
+
+    const monthLabel = document.getElementById("monthYear");
+    if (!monthLabel) return;
+
+    const [monthName, yearStr] = monthLabel.textContent.trim().split(" ");
     const year = parseInt(yearStr, 10);
 
     const months = {
@@ -191,28 +200,20 @@
       September: 9, Oktober: 10, November: 11, Dezember: 12
     };
 
-    return { year, month: months[monthName] };
-  }
-
-  function updateCounter() {
-    const gymDays = getGymDays();
-    const current = getShownMonthYear();
-    if (!current) return;
-
+    const month = months[monthName];
     let count = 0;
+
     for (const key in gymDays) {
       const [y, m] = key.split("-").map(Number);
-      if (y === current.year && m === current.month) {
+      if (y === year && m === month) {
         count++;
       }
     }
 
     counterEl.textContent =
       `GYM besucht: ${count}‑mal im Monat`;
-  }
+  };
 
-  // ständig synchron halten
-  setInterval(updateCounter, 300);
 })();
 </script>
 

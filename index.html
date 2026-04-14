@@ -154,5 +154,68 @@
   renderCalendar();
 </script>
 
+
+<!-- PATCH START -->
+<!-- ===== PATCH: Gym-Besuche pro Monat anzeigen ===== -->
+
+<p id="monthlyGymCount" style="
+  text-align: center;
+  font-weight: bold;
+  margin-top: 15px;
+  font-size: 18px;
+">
+  Im Monat war ich 0‑mal im Gym
+</p>
+
+<script>
+(function () {
+  const counterEl = document.getElementById("monthlyGymCount");
+  if (!counterEl) return;
+
+  function updateMonthlyGymCount() {
+    const gymDays = JSON.parse(localStorage.getItem("gymDays")) || {};
+    const monthLabel = document.getElementById("monthYear");
+    if (!monthLabel) return;
+
+    // Beispiel: "April 2026"
+    const [monthName, yearText] = monthLabel.textContent.trim().split(" ");
+    const year = parseInt(yearText, 10);
+
+    const monthMap = {
+      Januar: 1, Februar: 2, März: 3, April: 4,
+      Mai: 5, Juni: 6, Juli: 7, August: 8,
+      September: 9, Oktober: 10, November: 11, Dezember: 12
+    };
+
+    const month = monthMap[monthName];
+    let count = 0;
+
+    for (const key in gymDays) {
+      const [y, m] = key.split("-").map(Number);
+      if (y === year && m === month) {
+        count++;
+      }
+    }
+
+    counterEl.textContent =
+      `Im Monat war ich ${count}‑mal im Gym`;
+  }
+
+  // ✅ An renderCalendar anhängen (wichtig!)
+  if (typeof window.renderCalendar === "function") {
+    const originalRender = window.renderCalendar;
+    window.renderCalendar = function () {
+      originalRender();
+      updateMonthlyGymCount();
+    };
+  }
+
+  updateMonthlyGymCount();
+})();
+</script>
+
+<!-- ===== PATCH ENDE ===== -->
+``
+<!-- PATCH END -->
 </body>
 </html>

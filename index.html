@@ -15,18 +15,41 @@
       text-align: center;
     }
 
-    .calendar {
+    .calendar-container {
+      max-width: 500px;
+      margin: auto;
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+    }
+
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    button {
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+
+    .weekdays, .calendar {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      gap: 10px;
-      max-width: 500px;
-      margin: 20px auto;
+      text-align: center;
+    }
+
+    .weekdays div {
+      font-weight: bold;
+      padding: 5px 0;
     }
 
     .day {
-      background: white;
       padding: 15px;
-      text-align: center;
+      margin: 2px;
+      background: #eee;
       border-radius: 6px;
       cursor: pointer;
       user-select: none;
@@ -42,47 +65,95 @@
       font-weight: bold;
     }
 
-    .info {
-      text-align: center;
-      margin-top: 20px;
-      color: #555;
+    .empty {
+      background: transparent;
+      cursor: default;
     }
   </style>
 </head>
 <body>
 
 <h1>🏋️ Gym Kalender</h1>
-<p class="info">Klicke auf einen Tag, wenn du im Gym warst</p>
 
-<div class="calendar" id="calendar"></div>
+<div class="calendar-container">
+  <div class="calendar-header">
+    <button onclick="changeMonth(-1)">◀</button>
+    <div id="monthYear"></div>
+    <button onclick="changeMonth(1)">▶</button>
+  </div>
+
+  <div class="weekdays">
+    <div>Mo</div><div>Di</div><div>Mi</div>
+    <div>Do</div><div>Fr</div><div>Sa</div><div>So</div>
+  </div>
+
+  <div class="calendar" id="calendar"></div>
+</div>
 
 <script>
-  const calendar = document.getElementById("calendar");
-  const gymDays = JSON.parse(localStorage.getItem("gymDays")) || [];
+  const calendarEl = document.getElementById("calendar");
+  const monthYearEl = document.getElementById("monthYear");
 
-  for (let day = 1; day <= 30; day++) {
-    const div = document.createElement("div");
-    div.classList.add("day");
-    div.textContent = day;
+  let date = new Date();
 
-    if (gymDays.includes(day)) {
-      div.classList.add("gym");
-    }
+  const gymDays = JSON.parse(localStorage.getItem("gymDays")) || {};
 
-    div.addEventListener("click", () => {
-      if (gymDays.includes(day)) {
-        div.classList.remove("gym");
-        gymDays.splice(gymDays.indexOf(day), 1);
-      } else {
-        div.classList.add("gym");
-        gymDays.push(day);
-      }
-      localStorage.setItem("gymDays", JSON.stringify(gymDays));
+  function renderCalendar() {
+    calendarEl.innerHTML = "";
+
+    const year = date.getFullYear();
+    const month = date.getMonth();
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    monthYearEl.textContent = date.toLocaleString("de-DE", {
+      month: "long",
+      year: "numeric"
     });
 
-    calendar.appendChild(div);
+    const startDay = (firstDay === 0) ? 6 : firstDay - 1;
+
+    for (let i = 0; i < startDay; i++) {
+      const empty = document.createElement("div");
+      empty.classList.add("day", "empty");
+      calendarEl.appendChild(empty);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const div = document.createElement("div");
+      div.classList.add("day");
+      div.textContent = day;
+
+      const key = `${year}-${month + 1}-${day}`;
+
+      if (gymDays[key]) {
+        div.classList.add("gym");
+      }
+
+      div.onclick = () => {
+        if (gymDays[key]) {
+          delete gymDays[key];
+          div.classList.remove("gym");
+        } else {
+          gymDays[key] = true;
+          div.classList.add("gym");
+        }
+        localStorage.setItem("gymDays", JSON.stringify(gymDays));
+      };
+
+      calendarEl.appendChild(div);
+    }
   }
+
+  function changeMonth(direction) {
+    date.setMonth(date.getMonth() + direction);
+    renderCalendar();
+  }
+
+  renderCalendar();
 </script>
 
 </body>
 </html>
+``

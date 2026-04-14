@@ -156,37 +156,19 @@
 
 
 <!-- PATCH START -->
-<!-- ===== PATCH: Wochentage (Mo–So) anzeigen ===== -->
-
-<style>
-  .weekdays {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    text-align: center;
-    font-weight: bold;
-    margin-bottom: 6px;
-  }
-</style>
-
-<div class="weekdays" id="weekdayRow">
-  <div>Mo</div>
-  <div>Di</div>
-  <div>Mi</div>
-  <div>Do</div>
-  <div>Fr</div>
-  <div>Sa</div>
-  <div>So</div>
-</div>
+<!-- ===== PATCH: Doppelte Wochentage entfernen ===== -->
 
 <script>
 (function () {
-  const calendar = document.getElementById("calendar");
-  const weekdays = document.getElementById("weekdayRow");
+  // Alle Wochentags-Zeilen finden
+  const weekdayRows = document.querySelectorAll(".weekdays");
 
-  if (!calendar || !weekdays) return;
-
-  // Wochentage DIREKT vor den Kalender setzen
-  calendar.parentNode.insertBefore(weekdays, calendar);
+  // Falls mehr als eine existiert → alle außer der ersten entfernen
+  if (weekdayRows.length > 1) {
+    for (let i = 1; i < weekdayRows.length; i++) {
+      weekdayRows[i].remove();
+    }
+  }
 })();
 </script>
 

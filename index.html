@@ -154,26 +154,5 @@
   renderCalendar();
 </script>
 
-
-<!-- PATCH START -->
-<!-- ===== PATCH: Doppelte Wochentage entfernen ===== -->
-
-<script>
-(function () {
-  // Alle Wochentags-Zeilen finden
-  const weekdayRows = document.querySelectorAll(".weekdays");
-
-  // Falls mehr als eine existiert → alle außer der ersten entfernen
-  if (weekdayRows.length > 1) {
-    for (let i = 1; i < weekdayRows.length; i++) {
-      weekdayRows[i].remove();
-    }
-  }
-})();
-</script>
-
-<!-- ===== PATCH ENDE ===== -->
-
-<!-- PATCH END -->
 </body>
 </html>

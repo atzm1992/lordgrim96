@@ -2,76 +2,87 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Startseite – lordgrim96</title>
+  <title>Gym Kalender</title>
   <style>
     body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
       margin: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      background-color: #f2f2f2;
-      color: #333;
-    }
-
-    header {
-      background-color: #222;
       padding: 20px;
-    }
-
-    nav a {
-      color: white;
-      text-decoration: none;
-      margin-right: 20px;
-      font-weight: bold;
-    }
-
-    nav a:hover {
-      text-decoration: underline;
-    }
-
-    .container {
-      max-width: 900px;
-      margin: 40px auto;
-      padding: 20px;
-      background: white;
-      border-radius: 8px;
     }
 
     h1 {
-      color: #222;
+      text-align: center;
     }
 
-    footer {
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+      max-width: 500px;
+      margin: 20px auto;
+    }
+
+    .day {
+      background: white;
+      padding: 15px;
       text-align: center;
-      padding: 20px;
-      color: #777;
-      font-size: 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .day:hover {
+      background: #ddd;
+    }
+
+    .gym {
+      background: #4caf50;
+      color: white;
+      font-weight: bold;
+    }
+
+    .info {
+      text-align: center;
+      margin-top: 20px;
+      color: #555;
     }
   </style>
 </head>
 <body>
 
-  <header>
-    <nav>
-      <a href="index.html">Start</a>
-      <a href="#">Über mich</a>
-      <a href="#">Kontakt</a>
-    </nav>
-  </header>
+<h1>🏋️ Gym Kalender</h1>
+<p class="info">Klicke auf einen Tag, wenn du im Gym warst</p>
 
-  <div class="container">
-    <h1>Willkommen auf meiner Website 👋</h1>
-    <p>
-      Das ist meine persönliche Startseite.<br>
-      Diese Website wurde mit <strong>GitHub</strong> und <strong>Netlify</strong> erstellt.
-    </p>
+<div class="calendar" id="calendar"></div>
 
-    <p>
-      Hier werde ich meine Projekte, Ideen und Lernfortschritte zeigen.
-    </p>
-  </div>
+<script>
+  const calendar = document.getElementById("calendar");
+  const gymDays = JSON.parse(localStorage.getItem("gymDays")) || [];
 
-  <footer>
-    © 2026 lordgrim96
-  </footer>
+  for (let day = 1; day <= 30; day++) {
+    const div = document.createElement("div");
+    div.classList.add("day");
+    div.textContent = day;
+
+    if (gymDays.includes(day)) {
+      div.classList.add("gym");
+    }
+
+    div.addEventListener("click", () => {
+      if (gymDays.includes(day)) {
+        div.classList.remove("gym");
+        gymDays.splice(gymDays.indexOf(day), 1);
+      } else {
+        div.classList.add("gym");
+        gymDays.push(day);
+      }
+      localStorage.setItem("gymDays", JSON.stringify(gymDays));
+    });
+
+    calendar.appendChild(div);
+  }
+</script>
 
 </body>
 </html>

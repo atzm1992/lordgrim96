@@ -154,5 +154,64 @@
   renderCalendar();
 </script>
 
+
+<!-- PATCH START -->
+<!-- ===== PATCH: Stabiler Monats-Gym-Zähler (MutationObserver) ===== -->
+
+<p id="monthlyGymCount" style="
+  text-align: center;
+  font-weight: bold;
+  margin-top: 15px;
+  font-size: 18px;
+">
+  Im Monat war ich 0‑mal im Gym
+</p>
+
+<script>
+(function () {
+  const counterEl = document.getElementById("monthlyGymCount");
+  const calendarEl = document.getElementById("calendar");
+  const monthLabel = document.getElementById("monthYear");
+
+  if (!counterEl || !calendarEl || !monthLabel) return;
+
+  const monthMap = {
+    Januar: 1, Februar: 2, März: 3, April: 4,
+    Mai: 5, Juni: 6, Juli: 7, August: 8,
+    September: 9, Oktober: 10, November: 11, Dezember: 12
+  };
+
+  function updateCounter() {
+    const gymDays = JSON.parse(localStorage.getItem("gymDays")) || {};
+    const [monthName, yearText] = monthLabel.textContent.trim().split(" ");
+    const year = parseInt(yearText, 10);
+    const month = monthMap[monthName];
+
+    let count = 0;
+    for (const key in gymDays) {
+      const [y, m] = key.split("-").map(Number);
+      if (y === year && m === month) count++;
+    }
+
+    counterEl.textContent =
+      `Im Monat war ich ${count}‑mal im Gym`;
+  }
+
+  // 🔥 Beobachtet ALLE Änderungen im Kalender
+  const observer = new MutationObserver(updateCounter);
+  observer.observe(calendarEl, {
+    childList: true,
+    subtree: true,
+    attributes: true
+  });
+
+  // Initial einmal berechnen
+  updateCounter();
+})();
+</script>
+
+<!-- ===== PATCH ENDE ===== -->
+
+<!-- PATCH END -->
 </body>
 </html>

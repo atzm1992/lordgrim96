@@ -309,5 +309,67 @@
 
 <!-- ===== PATCH ENDE ===== -->
 <!-- PATCH END -->
+
+<!-- PATCH START -->
+<!-- ===== PATCH: Hintergrund VOLLSTÄNDIG ausblenden bis Login ===== -->
+
+<style>
+  /* Login-Overlay komplett deckend */
+  #loginOverlay {
+    background: #ffffff;  /* GANZ weiß, nichts scheint durch */
+  }
+
+  /* Hauptinhalt initial verstecken */
+  body > *:not(#loginOverlay) {
+    display: none;
+  }
+
+  /* Nach Login wieder anzeigen */
+  body.logged-in > * {
+    display: block;
+  }
+
+  body.logged-in #loginOverlay {
+    display: none;
+  }
+</style>
+
+<script>
+(function () {
+
+  function applyLoginVisibility() {
+    if (localStorage.getItem("loggedIn") === "true") {
+      document.body.classList.add("logged-in");
+    } else {
+      document.body.classList.remove("logged-in");
+    }
+  }
+
+  // Beim Laden einmal prüfen
+  applyLoginVisibility();
+
+  // Login-Funktion erweitern (falls vorhanden)
+  if (window.login) {
+    const oldLogin = window.login;
+    window.login = function () {
+      oldLogin();
+      applyLoginVisibility();
+    };
+  }
+
+  // Logout sauber behandeln
+  if (window.logout) {
+    const oldLogout = window.logout;
+    window.logout = function () {
+      oldLogout();
+      document.body.classList.remove("logged-in");
+    };
+  }
+
+})();
+</script>
+
+<!-- ===== PATCH ENDE ===== -->
+<!-- PATCH END -->
 </body>
 </html>

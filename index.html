@@ -154,5 +154,69 @@
   renderCalendar();
 </script>
 
+
+<!-- PATCH START -->
+<!-- ===== FINAL PATCH: Gym Monats-Zähler (einzig & korrekt) ===== -->
+
+<p id="gymMonthCounter" style="
+  text-align: center;
+  font-weight: bold;
+  margin-top: 15px;
+  font-size: 18px;
+">
+  GYM besucht: 0‑mal im Monat
+</p>
+
+<script>
+(function () {
+  const counterEl = document.getElementById("gymMonthCounter");
+  if (!counterEl) return;
+
+  // Gym-Daten aus localStorage
+  function getGymDays() {
+    return JSON.parse(localStorage.getItem("gymDays")) || {};
+  }
+
+  // Aktuellen Monat aus Kalender lesen (z. B. „April 2026“)
+  function getShownMonthYear() {
+    const label = document.getElementById("monthYear");
+    if (!label) return null;
+
+    const [monthName, yearStr] = label.textContent.trim().split(" ");
+    const year = parseInt(yearStr, 10);
+
+    const months = {
+      Januar: 1, Februar: 2, März: 3, April: 4,
+      Mai: 5, Juni: 6, Juli: 7, August: 8,
+      September: 9, Oktober: 10, November: 11, Dezember: 12
+    };
+
+    return { year, month: months[monthName] };
+  }
+
+  function updateCounter() {
+    const gymDays = getGymDays();
+    const current = getShownMonthYear();
+    if (!current) return;
+
+    let count = 0;
+    for (const key in gymDays) {
+      const [y, m] = key.split("-").map(Number);
+      if (y === current.year && m === current.month) {
+        count++;
+      }
+    }
+
+    counterEl.textContent =
+      `GYM besucht: ${count}‑mal im Monat`;
+  }
+
+  // ständig synchron halten
+  setInterval(updateCounter, 300);
+})();
+</script>
+
+<!-- ===== PATCH ENDE ===== -->
+<!-- PATCH END -->
 </body>
 </html>

@@ -98,10 +98,7 @@
 
   const gymDays = JSON.parse(localStorage.getItem("gymDays")) || {};
 
-  window.renderCalendar = function () {
-  ...
-}
-
+  function renderCalendar() {
     calendarEl.innerHTML = "";
 
     const year = date.getFullYear();
@@ -153,78 +150,9 @@
     date.setMonth(date.getMonth() + direction);
     renderCalendar();
   }
-window.renderCalendar = function () {
-  ...
-}
 
-/* ← HIER */
-renderCalendar();
+  renderCalendar();
 </script>
 
-
-<!-- PATCH START -->
-<!-- ===== PATCH: Gym-Zähler (direkt an renderCalendar gekoppelt) ===== -->
-
-<p id="gymMonthCounter" style="
-  text-align: center;
-  font-weight: bold;
-  margin-top: 15px;
-  font-size: 18px;
-">
-  GYM besucht: 0‑mal im Monat
-</p>
-
-<script>
-(function () {
-
-  // Wir prüfen, ob renderCalendar existiert
-  if (typeof renderCalendar !== "function") {
-    console.error("renderCalendar nicht gefunden – Patch nicht aktiv");
-    return;
-  }
-
-  const counterEl = document.getElementById("gymMonthCounter");
-  const originalRender = renderCalendar;
-
-  // 🔁 renderCalendar erweitern (NICHT ersetzen!)
-  window.renderCalendar = function () {
-
-    // Original ausführen
-    originalRender();
-
-    // Jetzt zählen wir exakt das, was gerendert wurde
-    const gymDays = JSON.parse(localStorage.getItem("gymDays")) || {};
-
-    const monthLabel = document.getElementById("monthYear");
-    if (!monthLabel) return;
-
-    const [monthName, yearStr] = monthLabel.textContent.trim().split(" ");
-    const year = parseInt(yearStr, 10);
-
-    const months = {
-      Januar: 1, Februar: 2, März: 3, April: 4,
-      Mai: 5, Juni: 6, Juli: 7, August: 8,
-      September: 9, Oktober: 10, November: 11, Dezember: 12
-    };
-
-    const month = months[monthName];
-    let count = 0;
-
-    for (const key in gymDays) {
-      const [y, m] = key.split("-").map(Number);
-      if (y === year && m === month) {
-        count++;
-      }
-    }
-
-    counterEl.textContent =
-      `GYM besucht: ${count}‑mal im Monat`;
-  };
-
-})();
-</script>
-
-<!-- ===== PATCH ENDE ===== -->
-<!-- PATCH END -->
 </body>
 </html>

@@ -213,5 +213,101 @@
 <!-- ===== PATCH ENDE ===== -->
 
 <!-- PATCH END -->
+
+<!-- PATCH START -->
+<!-- ===== PATCH: Einfaches Login-System ===== -->
+
+<style>
+  #loginOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+
+  #loginBox {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    width: 280px;
+    text-align: center;
+  }
+
+  #loginBox input {
+    width: 100%;
+    padding: 8px;
+    margin: 8px 0;
+  }
+
+  #loginBox button {
+    width: 100%;
+    padding: 8px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  #logoutBtn {
+    margin: 10px auto;
+    display: block;
+  }
+</style>
+
+<div id="loginOverlay">
+  <div id="loginBox">
+    <h3>🔒 Login</h3>
+    <input id="username" placeholder="Name">
+    <input id="password" type="password" placeholder="Passwort">
+    <button onclick="login()">Anmelden</button>
+    <p id="loginError" style="color:red;"></p>
+  </div>
+</div>
+
+<button id="logoutBtn" onclick="logout()">Logout</button>
+
+<script>
+(function () {
+  const LOGIN_USER = "gym";      // 👈 HIER Benutzername ändern
+  const LOGIN_PASS = "1234";     // 👈 HIER Passwort ändern
+
+  const overlay = document.getElementById("loginOverlay");
+  const logoutBtn = document.getElementById("logoutBtn");
+  const errorEl = document.getElementById("loginError");
+
+  function checkLogin() {
+    if (localStorage.getItem("loggedIn") === "true") {
+      overlay.style.display = "none";
+      logoutBtn.style.display = "block";
+    } else {
+      overlay.style.display = "flex";
+      logoutBtn.style.display = "none";
+    }
+  }
+
+  window.login = function () {
+    const user = document.getElementById("username").value;
+    const pass = document.getElementById("password").value;
+
+    if (user === LOGIN_USER && pass === LOGIN_PASS) {
+      localStorage.setItem("loggedIn", "true");
+      checkLogin();
+    } else {
+      errorEl.textContent = "Falsche Daten";
+    }
+  };
+
+  window.logout = function () {
+    localStorage.removeItem("loggedIn");
+    location.reload();
+  };
+
+  checkLogin();
+})();
+</script>
+
+<!-- ===== PATCH ENDE ===== -->
+<!-- PATCH END -->
 </body>
 </html>

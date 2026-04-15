@@ -1,16 +1,18 @@
 <?php
-$host = getenv("DB_HOST");
-$db   = getenv("DB_NAME");
-$user = getenv("DB_USER");
-$pass = getenv("DB_PASS");
+// config.php
+
+$DB_HOST = "localhost";
+$DB_NAME = "atzblltz_gymbro";
+$DB_USER = "atzblltz_gymbro";
+$DB_PASS = "XXXXXXX"; // echtes Passwort hier eintragen
 
 try {
   $pdo = new PDO(
-    "mysql:host=$host;dbname=$db;charset=utf8mb4",
-    $user,
-    $pass,
+    "mysql:host=$DB_HOST;dbname=$DB_NAME;charset=utf8mb4",
+    $DB_USER,
+    $DB_PASS,
     [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
   );
 } catch (PDOException $e) {
-  die("DB Fehler");
+  die("Datenbankverbindung fehlgeschlagen");
 }

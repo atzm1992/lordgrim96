@@ -22,6 +22,14 @@
       display: none;
     }
 
+    body.logged-in #appContent {
+      display: block;
+    }
+
+    body.logged-in #loginOverlay {
+      display: none;
+    }
+
     .calendar-container {
       background: white;
       padding: 15px;
@@ -53,12 +61,27 @@
       padding: 10px;
       border-radius: 5px;
       cursor: pointer;
+      user-select: none;
+    }
+
+    .day:hover {
+      background: #ddd;
     }
 
     .day.gym {
       background: #4caf50;
       color: white;
       font-weight: bold;
+    }
+
+    .day.empty {
+      background: transparent;
+      cursor: default;
+    }
+
+    .day.loading {
+      opacity: 0.5;
+      pointer-events: none;
     }
 
     /* LOGIN */
@@ -78,23 +101,38 @@
       border-radius: 8px;
       width: 280px;
       box-shadow: 0 10px 30px rgba(0,0,0,.2);
+      text-align: center;
     }
 
     #loginBox input {
       width: 100%;
       margin: 8px 0;
       padding: 8px;
+      box-sizing: border-box;
     }
 
     #loginBox button {
       width: 100%;
       padding: 8px;
       font-weight: bold;
+      cursor: pointer;
+    }
+
+    #loginError {
+      color: red;
+      min-height: 1em;
+      margin: 4px 0 0;
     }
 
     #monthlyCount {
       font-weight: bold;
       margin: 15px 0;
+    }
+
+    #logoutBtn {
+      margin-top: 10px;
+      padding: 6px 12px;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -104,6 +142,181 @@
 <!-- LOGIN -->
 <div id="loginOverlay">
   <div id="loginBox">
-    <h3>🔒 Login</h3>
-    <input id="user" placeholder="Name">
-    <input id="pass" type="password" placeholder="Passwort">
+    <h3>Login</h3>
+    <input id="loginUser" placeholder="Name" autocomplete="username">
+    <input id="loginPass" type="password" placeholder="Passwort" autocomplete="current-password">
+    <button id="loginBtn">Anmelden</button>
+    <p id="loginError"></p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appContent">
+  <h1>Gym Kalender</h1>
+
+  <div class="calendar-container">
+    <div class="calendar-header">
+      <button id="prevMonth">&#9664;</button>
+      <div id="monthYear"></div>
+      <button id="nextMonth">&#9654;</button>
+    </div>
+
+    <div class="weekdays">
+      <div>Mo</div><div>Di</div><div>Mi</div>
+      <div>Do</div><div>Fr</div><div>Sa</div><div>So</div>
+    </div>
+
+    <div class="calendar" id="calendar"></div>
+  </div>
+
+  <p id="monthlyCount">Im Monat war ich 0-mal im Gym</p>
+  <button id="logoutBtn">Abmelden</button>
+</div>
+
+<script>
+(function () {
+  // Client-side login (matches previous implementation)
+  const USERNAME = "gym";
+  const PASSWORD = "1234";
+
+  const state = {
+    date: new Date(),
+    gymDays: new Set(), // "YYYY-MM-DD"
+    currentUser: null,
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const pad = (n) => (n < 10 ? "0" + n : "" + n);
+  const formatDate = (y, m, d) => y + "-" + pad(m) + "-" + pad(d);
+
+  function renderCalendar() {
+    const cal = $("calendar");
+    cal.innerHTML = "";
+
+    const year = state.date.getFullYear();
+    const month = state.date.getMonth();
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    $("monthYear").textContent = state.date.toLocaleString("de-DE", {
+      month: "long",
+      year: "numeric"
+    });
+
+    const startDay = (firstDay === 0) ? 6 : firstDay - 1;
+    for (let i = 0; i < startDay; i++) {
+      const empty = document.createElement("div");
+      empty.className = "day empty";
+      cal.appendChild(empty);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const key = formatDate(year, month + 1, day);
+      const el = document.createElement("div");
+      el.className = "day";
+      el.textContent = day;
+      if (state.gymDays.has(key)) el.classList.add("gym");
+      el.addEventListener("click", () => toggleDay(key, el));
+      cal.appendChild(el);
+    }
+
+    updateCounter();
+  }
+
+  function updateCounter() {
+    const year = state.date.getFullYear();
+    const month = state.date.getMonth() + 1;
+    let count = 0;
+    state.gymDays.forEach((k) => {
+      const parts = k.split("-").map(Number);
+      if (parts[0] === year && parts[1] === month) count++;
+    });
+    $("monthlyCount").textContent = "Im Monat war ich " + count + "-mal im Gym";
+  }
+
+  async function toggleDay(key, el) {
+    if (el.classList.contains("loading")) return;
+    el.classList.add("loading");
+    const isGym = state.gymDays.has(key);
+    const url = isGym ? "delete_day.php" : "save_day.php";
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user: state.currentUser, date: key })
+      });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      if (isGym) {
+        state.gymDays.delete(key);
+        el.classList.remove("gym");
+      } else {
+        state.gymDays.add(key);
+        el.classList.add("gym");
+      }
+      updateCounter();
+    } catch (err) {
+      alert("Fehler beim Speichern: " + err.message);
+    } finally {
+      el.classList.remove("loading");
+    }
+  }
+
+  async function loadDays() {
+    try {
+      const res = await fetch("get_days.php?user=" + encodeURIComponent(state.currentUser));
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      state.gymDays = new Set(data.dates || []);
+    } catch (err) {
+      alert("Kalender konnte nicht geladen werden: " + err.message);
+    }
+    renderCalendar();
+  }
+
+  function changeMonth(delta) {
+    state.date.setMonth(state.date.getMonth() + delta);
+    renderCalendar();
+  }
+
+  function doLogin() {
+    const u = $("loginUser").value.trim();
+    const p = $("loginPass").value;
+    if (u === USERNAME && p === PASSWORD) {
+      localStorage.setItem("loggedIn", "true");
+      state.currentUser = u;
+      document.body.classList.add("logged-in");
+      loadDays();
+    } else {
+      $("loginError").textContent = "Falscher Name oder Passwort";
+    }
+  }
+
+  function doLogout() {
+    localStorage.removeItem("loggedIn");
+    state.currentUser = null;
+    state.gymDays.clear();
+    document.body.classList.remove("logged-in");
+    $("loginPass").value = "";
+  }
+
+  $("loginBtn").addEventListener("click", doLogin);
+  $("loginPass").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") doLogin();
+  });
+  $("logoutBtn").addEventListener("click", doLogout);
+  $("prevMonth").addEventListener("click", () => changeMonth(-1));
+  $("nextMonth").addEventListener("click", () => changeMonth(1));
+
+  if (localStorage.getItem("loggedIn") === "true") {
+    state.currentUser = USERNAME;
+    document.body.classList.add("logged-in");
+    loadDays();
+  } else {
+    renderCalendar();
+  }
+})();
+</script>
+
+</body>
+</html>

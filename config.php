@@ -4,7 +4,7 @@
 $DB_HOST = "localhost";
 $DB_NAME = "atzblltz_gymbro";
 $DB_USER = "atzblltz_gymbro";
-$DB_PASS = "XXXXXXX"; // echtes Passwort hier eintragen
+$DB_PASS = "__DB_PASSWORD__"; // wird beim Deploy durch GitHub secret DB_PASSWORD ersetzt
 
 try {
   $pdo = new PDO(

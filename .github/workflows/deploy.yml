@@ -13,6 +13,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Inject database password
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          php -r '
+            $pwd = getenv("DB_PASSWORD");
+            $cfg = file_get_contents("config.php");
+            $cfg = str_replace("__DB_PASSWORD__", $pwd, $cfg);
+            file_put_contents("config.php", $cfg);
+          '
+
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:

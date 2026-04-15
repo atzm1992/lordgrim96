@@ -28,8 +28,8 @@ if (!$dt || $dt->format("Y-m-d") !== $date) {
 }
 
 $stmt = $pdo->prepare("
-  INSERT IGNORE INTO gym_days (user_name, gym_date)
-  VALUES (?, ?)
+  DELETE FROM gym_days
+  WHERE user_name = ? AND gym_date = ?
 ");
 
 $stmt->execute([$user, $date]);

@@ -1,37 +1,29 @@
 <?php
+require "auth.php";
 require "config.php";
 
+$userId = require_auth();
 header("Content-Type: application/json");
 
 $data = json_decode(file_get_contents("php://input"), true);
-
-if (!is_array($data) || !isset($data["user"], $data["date"])) {
-  http_response_code(400);
-  echo json_encode(["error" => "missing fields"]);
-  exit;
-}
-
-$user = trim((string)$data["user"]);
-$date = (string)$data["date"];
-
-if ($user === "" || strlen($user) > 50 || !preg_match('/^[\w\-]+$/', $user)) {
-  http_response_code(400);
-  echo json_encode(["error" => "invalid user"]);
-  exit;
-}
+$date = (string)($data['date'] ?? '');
 
 $dt = DateTime::createFromFormat("Y-m-d", $date);
 if (!$dt || $dt->format("Y-m-d") !== $date) {
-  http_response_code(400);
-  echo json_encode(["error" => "invalid date"]);
-  exit;
+    http_response_code(400);
+    echo json_encode(["error" => "invalid date"]);
+    exit;
 }
 
-$stmt = $pdo->prepare("
-  INSERT IGNORE INTO gym_days (user_name, gym_date)
-  VALUES (?, ?)
-");
+$today = new DateTime();
+$today->setTime(0, 0, 0);
+if ($dt > $today) {
+    http_response_code(400);
+    echo json_encode(["error" => "future date not allowed"]);
+    exit;
+}
 
-$stmt->execute([$user, $date]);
+$stmt = $pdo->prepare("INSERT IGNORE INTO gym_days (user_id, date) VALUES (?, ?)");
+$stmt->execute([$userId, $date]);
 
 echo json_encode(["status" => "ok"]);

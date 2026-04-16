@@ -6,6 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
     body {
       font-family: Arial, sans-serif;
       background: #f4f4f4;
@@ -14,28 +16,92 @@
       text-align: center;
     }
 
-    h1 {
-      margin-bottom: 10px;
+    h1 { margin-bottom: 10px; }
+
+    /* ── Auth overlay ───────────────────────────────────── */
+    #authOverlay {
+      position: fixed;
+      inset: 0;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
     }
 
-    #appContent {
-      display: none;
+    #authBox {
+      background: #fff;
+      padding: 24px 28px;
+      border-radius: 10px;
+      width: 300px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.15);
+      text-align: center;
     }
 
-    body.logged-in #appContent {
+    #authBox h3 { margin-top: 0; }
+
+    #authBox input {
       display: block;
+      width: 100%;
+      margin: 8px 0;
+      padding: 9px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 14px;
     }
 
-    body.logged-in #loginOverlay {
-      display: none;
+    #authBox button {
+      width: 100%;
+      padding: 9px;
+      margin-top: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
     }
 
+    #loginBtn    { background: #4caf50; color: white; }
+    #registerBtn { background: #eee; color: #333; }
+
+    #authError {
+      color: red;
+      min-height: 1.2em;
+      margin: 6px 0 0;
+      font-size: 13px;
+    }
+
+    /* ── App ────────────────────────────────────────────── */
+    #appContent { display: none; }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 420px;
+      margin: 0 auto 8px;
+    }
+
+    #usernameLabel { font-weight: bold; }
+
+    #logoutBtn, #statsLink {
+      padding: 5px 10px;
+      cursor: pointer;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background: #fff;
+      font-size: 13px;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    /* ── Calendar ───────────────────────────────────────── */
     .calendar-container {
       background: white;
       padding: 15px;
       border-radius: 10px;
       max-width: 420px;
       margin: 0 auto;
+      box-shadow: 0 2px 8px rgba(0,0,0,.08);
     }
 
     .calendar-header {
@@ -43,35 +109,56 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 10px;
+      gap: 6px;
     }
 
-    .weekdays,
-    .calendar {
+    .calendar-header button {
+      background: #eee;
+      border: none;
+      border-radius: 5px;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    .calendar-header button:hover { background: #ddd; }
+
+    #monthYear { font-weight: bold; font-size: 1.05em; flex: 1; }
+
+    .weekdays, .calendar {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
       gap: 5px;
     }
 
-    .weekdays div {
-      font-weight: bold;
-    }
+    .weekdays div { font-weight: bold; font-size: 12px; padding: 4px 0; }
 
     .day {
       background: #eee;
-      padding: 10px;
+      padding: 10px 4px;
       border-radius: 5px;
       cursor: pointer;
       user-select: none;
+      position: relative;
+      font-size: 14px;
     }
 
-    .day:hover {
-      background: #ddd;
-    }
+    .day:hover { background: #ddd; }
 
     .day.gym {
       background: #4caf50;
       color: white;
       font-weight: bold;
+    }
+
+    .day.today {
+      outline: 2.5px solid #1976d2;
+      outline-offset: -2px;
+    }
+
+    .day.future {
+      opacity: 0.35;
+      cursor: not-allowed;
     }
 
     .day.empty {
@@ -84,80 +171,174 @@
       pointer-events: none;
     }
 
-    /* LOGIN */
-    #loginOverlay {
+    .day .note-dot {
+      position: absolute;
+      bottom: 3px;
+      right: 4px;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #fff;
+      opacity: .8;
+    }
+
+    /* ── Stats bar ──────────────────────────────────────── */
+    .stats-bar {
+      max-width: 420px;
+      margin: 12px auto 0;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      font-size: 14px;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 8px;
+      padding: 8px 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      min-width: 100px;
+    }
+
+    .stat-card .label { color: #888; font-size: 11px; margin-bottom: 2px; }
+    .stat-card .value { font-weight: bold; font-size: 1.2em; }
+
+    /* ── Goal progress ──────────────────────────────────── */
+    #goalSection {
+      max-width: 420px;
+      margin: 12px auto 0;
+      background: white;
+      border-radius: 8px;
+      padding: 10px 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      text-align: left;
+      font-size: 13px;
+    }
+
+    #goalSection .goal-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .progress-track {
+      background: #eee;
+      border-radius: 4px;
+      height: 12px;
+    }
+
+    .progress-fill {
+      background: #4caf50;
+      border-radius: 4px;
+      height: 12px;
+      transition: width .4s;
+    }
+
+    /* ── Note modal ─────────────────────────────────────── */
+    #noteModal {
+      display: none;
       position: fixed;
       inset: 0;
-      background: white;
-      display: flex;
+      background: rgba(0,0,0,.4);
       align-items: center;
       justify-content: center;
-      z-index: 9999;
+      z-index: 8888;
     }
 
-    #loginBox {
-      background: #fff;
+    #noteModal.open { display: flex; }
+
+    #noteBox {
+      background: white;
+      border-radius: 10px;
       padding: 20px;
-      border-radius: 8px;
-      width: 280px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.2);
-      text-align: center;
+      width: 300px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.2);
     }
 
-    #loginBox input {
+    #noteBox h4 { margin-top: 0; }
+
+    #noteText {
       width: 100%;
-      margin: 8px 0;
+      height: 80px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
       padding: 8px;
-      box-sizing: border-box;
+      font-size: 14px;
+      resize: none;
     }
 
-    #loginBox button {
-      width: 100%;
-      padding: 8px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    #loginError {
-      color: red;
-      min-height: 1em;
-      margin: 4px 0 0;
-    }
-
-    #monthlyCount {
-      font-weight: bold;
-      margin: 15px 0;
-    }
-
-    #logoutBtn {
+    .note-btns {
+      display: flex;
+      gap: 8px;
       margin-top: 10px;
-      padding: 6px 12px;
+    }
+
+    .note-btns button {
+      flex: 1;
+      padding: 7px;
       cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      font-weight: bold;
+    }
+
+    #noteSave   { background: #4caf50; color: white; }
+    #noteCancel { background: #eee; }
+
+    /* ── Toast ──────────────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(60px);
+      background: #333;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 14px;
+      opacity: 0;
+      transition: opacity .3s, transform .3s;
+      pointer-events: none;
+      z-index: 9998;
+      white-space: nowrap;
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
     }
   </style>
 </head>
-
 <body>
 
-<!-- LOGIN -->
-<div id="loginOverlay">
-  <div id="loginBox">
-    <h3>Login</h3>
-    <input id="loginUser" placeholder="Name" autocomplete="username">
-    <input id="loginPass" type="password" placeholder="Passwort" autocomplete="current-password">
+<!-- ── Auth overlay ────────────────────────────────────── -->
+<div id="authOverlay">
+  <div id="authBox">
+    <h3>Gym Kalender</h3>
+    <input id="authUser" placeholder="Benutzername" autocomplete="username">
+    <input id="authPass" type="password" placeholder="Passwort" autocomplete="current-password">
     <button id="loginBtn">Anmelden</button>
-    <p id="loginError"></p>
+    <button id="registerBtn">Registrieren</button>
+    <p id="authError"></p>
   </div>
 </div>
 
-<!-- APP -->
+<!-- ── App ─────────────────────────────────────────────── -->
 <div id="appContent">
-  <h1>Gym Kalender</h1>
+  <div class="top-bar">
+    <span id="usernameLabel"></span>
+    <div style="display:flex;gap:6px">
+      <a href="stats.php" id="statsLink">📊 Statistiken</a>
+      <button id="logoutBtn">Abmelden</button>
+    </div>
+  </div>
 
   <div class="calendar-container">
     <div class="calendar-header">
       <button id="prevMonth">&#9664;</button>
       <div id="monthYear"></div>
+      <button id="todayBtn">Heute</button>
       <button id="nextMonth">&#9654;</button>
     </div>
 
@@ -169,152 +350,368 @@
     <div class="calendar" id="calendar"></div>
   </div>
 
-  <p id="monthlyCount">Im Monat war ich 0-mal im Gym</p>
-  <button id="logoutBtn">Abmelden</button>
+  <div class="stats-bar">
+    <div class="stat-card">
+      <div class="label">Dieser Monat</div>
+      <div class="value" id="statMonth">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">🔥 Streak</div>
+      <div class="value" id="statStreak">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Längste Serie</div>
+      <div class="value" id="statBest">0</div>
+    </div>
+  </div>
+
+  <div id="goalSection">
+    <div class="goal-label">
+      <span>Monatsziel</span>
+      <span id="goalLabel">0 / 12 Tage</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+  </div>
 </div>
+
+<!-- ── Note modal ──────────────────────────────────────── -->
+<div id="noteModal">
+  <div id="noteBox">
+    <h4 id="noteTitle">Notiz</h4>
+    <textarea id="noteText" maxlength="500" placeholder="Was hast du trainiert? (z.B. Brust, Beine, Cardio)"></textarea>
+    <div class="note-btns">
+      <button id="noteSave">Speichern</button>
+      <button id="noteCancel">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast ───────────────────────────────────────────── -->
+<div id="toast"></div>
 
 <script>
 (function () {
-  // Client-side login (matches previous implementation)
-  const USERNAME = "gym";
-  const PASSWORD = "1234";
-
   const state = {
     date: new Date(),
-    gymDays: new Set(), // "YYYY-MM-DD"
+    gymDays: new Set(),   // "YYYY-MM-DD"
+    notes: {},            // {date: text}
+    monthlyGoal: 12,
     currentUser: null,
   };
 
   const $ = (id) => document.getElementById(id);
-  const pad = (n) => (n < 10 ? "0" + n : "" + n);
-  const formatDate = (y, m, d) => y + "-" + pad(m) + "-" + pad(d);
+  const pad = (n) => String(n).padStart(2, "0");
+  const fmt = (y, m, d) => y + "-" + pad(m) + "-" + pad(d);
 
+  const todayKey = fmt(
+    new Date().getFullYear(),
+    new Date().getMonth() + 1,
+    new Date().getDate()
+  );
+
+  // ── Toast ──────────────────────────────────────────────
+  let toastTimer;
+  function toast(msg, isError) {
+    const el = $("toast");
+    el.textContent = msg;
+    el.style.background = isError ? "#c0392b" : "#333";
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove("show"), 3000);
+  }
+
+  // ── Calendar render ────────────────────────────────────
   function renderCalendar() {
     const cal = $("calendar");
     cal.innerHTML = "";
 
-    const year = state.date.getFullYear();
+    const year  = state.date.getFullYear();
     const month = state.date.getMonth();
 
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-
     $("monthYear").textContent = state.date.toLocaleString("de-DE", {
-      month: "long",
-      year: "numeric"
+      month: "long", year: "numeric"
     });
 
-    const startDay = (firstDay === 0) ? 6 : firstDay - 1;
-    for (let i = 0; i < startDay; i++) {
-      const empty = document.createElement("div");
-      empty.className = "day empty";
-      cal.appendChild(empty);
-    }
+    const firstDay   = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const startDay   = (firstDay === 0) ? 6 : firstDay - 1;
 
-    for (let day = 1; day <= daysInMonth; day++) {
-      const key = formatDate(year, month + 1, day);
+    for (let i = 0; i < startDay; i++) {
       const el = document.createElement("div");
-      el.className = "day";
-      el.textContent = day;
-      if (state.gymDays.has(key)) el.classList.add("gym");
-      el.addEventListener("click", () => toggleDay(key, el));
+      el.className = "day empty";
       cal.appendChild(el);
     }
 
-    updateCounter();
+    for (let day = 1; day <= daysInMonth; day++) {
+      const key = fmt(year, month + 1, day);
+      const el  = document.createElement("div");
+      el.className = "day";
+      el.textContent = day;
+
+      if (state.gymDays.has(key)) {
+        el.classList.add("gym");
+        if (state.notes[key]) {
+          const dot = document.createElement("span");
+          dot.className = "note-dot";
+          el.appendChild(dot);
+        }
+      }
+      if (key === todayKey) el.classList.add("today");
+      if (key > todayKey)   el.classList.add("future");
+
+      el.addEventListener("click", () => {
+        if (key > todayKey) {
+          toast("Zukünftige Tage können nicht markiert werden.", true);
+          return;
+        }
+        toggleDay(key, el);
+      });
+
+      el.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        if (state.gymDays.has(key)) openNoteModal(key);
+      });
+
+      cal.appendChild(el);
+    }
+
+    updateStats();
   }
 
-  function updateCounter() {
-    const year = state.date.getFullYear();
+  // ── Stats ──────────────────────────────────────────────
+  function updateStats() {
+    const year  = state.date.getFullYear();
     const month = state.date.getMonth() + 1;
-    let count = 0;
+    let monthCount = 0;
     state.gymDays.forEach((k) => {
-      const parts = k.split("-").map(Number);
-      if (parts[0] === year && parts[1] === month) count++;
+      const [y, m] = k.split("-").map(Number);
+      if (y === year && m === month) monthCount++;
     });
-    $("monthlyCount").textContent = "Im Monat war ich " + count + "-mal im Gym";
+    $("statMonth").textContent = monthCount;
+
+    // Streak & best streak
+    const sorted = Array.from(state.gymDays).sort();
+    let streak = 0, best = 0, cur = 0;
+    const MS_PER_DAY = 86400000;
+
+    // current streak: walk back from today, only counting marked days
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    // If today is not a gym day, start checking from yesterday
+    if (!state.gymDays.has(todayKey)) d.setDate(d.getDate() - 1);
+    while (true) {
+      const k = fmt(d.getFullYear(), d.getMonth() + 1, d.getDate());
+      if (state.gymDays.has(k)) { streak++; d.setDate(d.getDate() - 1); }
+      else break;
+    }
+
+    // longest streak
+    let prev = null;
+    for (const k of sorted) {
+      if (prev === null) { cur = 1; }
+      else {
+        const pd = new Date(prev + "T00:00:00");
+        const cd = new Date(k   + "T00:00:00");
+        const diff = (cd - pd) / MS_PER_DAY;
+        cur = (diff === 1) ? cur + 1 : 1;
+      }
+      if (cur > best) best = cur;
+      prev = k;
+    }
+
+    $("statStreak").textContent = streak;
+    $("statBest").textContent   = best;
+
+    // Monthly goal
+    const goal = state.monthlyGoal;
+    const pct  = Math.min(100, Math.round(monthCount / goal * 100));
+    $("goalLabel").textContent         = monthCount + " / " + goal + " Tage (" + pct + "%)";
+    $("progressFill").style.width      = pct + "%";
+    $("progressFill").style.background = pct >= 100 ? "#f39c12" : "#4caf50";
   }
 
+  // ── Toggle day ─────────────────────────────────────────
   async function toggleDay(key, el) {
     if (el.classList.contains("loading")) return;
     el.classList.add("loading");
     const isGym = state.gymDays.has(key);
-    const url = isGym ? "delete_day.php" : "save_day.php";
+    const url   = isGym ? "delete_day.php" : "save_day.php";
     try {
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user: state.currentUser, date: key })
+        body: JSON.stringify({ date: key })
       });
-      if (!res.ok) throw new Error("HTTP " + res.status);
+      if (res.status === 401) { handleUnauth(); return; }
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || "HTTP " + res.status);
+      }
       if (isGym) {
         state.gymDays.delete(key);
         el.classList.remove("gym");
+        el.querySelector(".note-dot")?.remove();
+        delete state.notes[key];
+        toast("Tag entfernt");
       } else {
         state.gymDays.add(key);
         el.classList.add("gym");
+        toast("Gym-Tag gespeichert 💪");
       }
-      updateCounter();
+      updateStats();
     } catch (err) {
-      alert("Fehler beim Speichern: " + err.message);
+      toast("Fehler: " + err.message, true);
     } finally {
       el.classList.remove("loading");
     }
   }
 
+  // ── Load days ──────────────────────────────────────────
   async function loadDays() {
     try {
-      const res = await fetch("get_days.php?user=" + encodeURIComponent(state.currentUser));
+      const res = await fetch("get_days.php");
+      if (res.status === 401) { handleUnauth(); return; }
       if (!res.ok) throw new Error("HTTP " + res.status);
       const data = await res.json();
-      state.gymDays = new Set(data.dates || []);
+      state.gymDays    = new Set(data.dates || []);
+      state.notes      = data.notes || {};
+      state.monthlyGoal = data.monthly_goal || 12;
+      state.currentUser = data.username || "";
+      $("usernameLabel").textContent = "👤 " + state.currentUser;
     } catch (err) {
-      alert("Kalender konnte nicht geladen werden: " + err.message);
+      toast("Kalender konnte nicht geladen werden: " + err.message, true);
     }
     renderCalendar();
   }
 
-  function changeMonth(delta) {
-    state.date.setMonth(state.date.getMonth() + delta);
-    renderCalendar();
+  // ── Note modal ─────────────────────────────────────────
+  let noteDate = null;
+
+  function openNoteModal(key) {
+    noteDate = key;
+    $("noteTitle").textContent = "Notiz für " + key;
+    $("noteText").value = state.notes[key] || "";
+    $("noteModal").classList.add("open");
+    $("noteText").focus();
   }
 
-  function doLogin() {
-    const u = $("loginUser").value.trim();
-    const p = $("loginPass").value;
-    if (u === USERNAME && p === PASSWORD) {
-      localStorage.setItem("loggedIn", "true");
-      state.currentUser = u;
-      document.body.classList.add("logged-in");
-      loadDays();
-    } else {
-      $("loginError").textContent = "Falscher Name oder Passwort";
+  $("noteSave").addEventListener("click", async () => {
+    if (!noteDate) return;
+    const notes = $("noteText").value.trim();
+    try {
+      const res = await fetch("save_note.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: noteDate, notes })
+      });
+      if (res.status === 401) { handleUnauth(); return; }
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || "HTTP " + res.status);
+      }
+      if (notes) { state.notes[noteDate] = notes; }
+      else       { delete state.notes[noteDate]; }
+      toast("Notiz gespeichert");
+    } catch (err) {
+      toast("Fehler: " + err.message, true);
     }
-  }
-
-  function doLogout() {
-    localStorage.removeItem("loggedIn");
-    state.currentUser = null;
-    state.gymDays.clear();
-    document.body.classList.remove("logged-in");
-    $("loginPass").value = "";
-  }
-
-  $("loginBtn").addEventListener("click", doLogin);
-  $("loginPass").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") doLogin();
+    $("noteModal").classList.remove("open");
+    renderCalendar();
   });
-  $("logoutBtn").addEventListener("click", doLogout);
-  $("prevMonth").addEventListener("click", () => changeMonth(-1));
-  $("nextMonth").addEventListener("click", () => changeMonth(1));
 
-  if (localStorage.getItem("loggedIn") === "true") {
-    state.currentUser = USERNAME;
-    document.body.classList.add("logged-in");
-    loadDays();
-  } else {
-    renderCalendar();
+  $("noteCancel").addEventListener("click", () => {
+    $("noteModal").classList.remove("open");
+  });
+
+  // ── Auth ───────────────────────────────────────────────
+  async function doAuth(endpoint) {
+    const username = $("authUser").value.trim();
+    const password = $("authPass").value;
+    $("authError").textContent = "";
+
+    if (!username || !password) {
+      $("authError").textContent = "Bitte Name und Passwort eingeben.";
+      return;
+    }
+
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        $("authError").textContent = data.error || "Fehler beim Anmelden.";
+        return;
+      }
+      $("authOverlay").style.display = "none";
+      $("appContent").style.display  = "block";
+      loadDays();
+    } catch (err) {
+      $("authError").textContent = "Netzwerkfehler. Bitte erneut versuchen.";
+    }
   }
+
+  function handleUnauth() {
+    $("appContent").style.display  = "none";
+    $("authOverlay").style.display = "flex";
+    $("authError").textContent     = "Sitzung abgelaufen. Bitte erneut anmelden.";
+  }
+
+  $("loginBtn").addEventListener("click",    () => doAuth("login.php"));
+  $("registerBtn").addEventListener("click", () => doAuth("register.php"));
+  $("authPass").addEventListener("keydown",  (e) => { if (e.key === "Enter") doAuth("login.php"); });
+
+  $("logoutBtn").addEventListener("click", async () => {
+    await fetch("logout.php", { method: "POST" }).catch(() => {});
+    handleUnauth();
+    state.gymDays.clear();
+    state.notes = {};
+    $("authUser").value = "";
+    $("authPass").value = "";
+    $("authError").textContent = "";
+  });
+
+  // ── Navigation ─────────────────────────────────────────
+  $("prevMonth").addEventListener("click", () => {
+    state.date.setMonth(state.date.getMonth() - 1);
+    renderCalendar();
+  });
+  $("nextMonth").addEventListener("click", () => {
+    state.date.setMonth(state.date.getMonth() + 1);
+    renderCalendar();
+  });
+  $("todayBtn").addEventListener("click", () => {
+    state.date = new Date();
+    renderCalendar();
+  });
+
+  // ── Init: check session ────────────────────────────────
+  (async () => {
+    try {
+      const res = await fetch("get_days.php");
+      if (res.status === 401) {
+        // Not logged in — show overlay
+        return;
+      }
+      if (res.ok) {
+        const data = await res.json();
+        state.gymDays     = new Set(data.dates || []);
+        state.notes       = data.notes || {};
+        state.monthlyGoal = data.monthly_goal || 12;
+        state.currentUser = data.username || "";
+        $("usernameLabel").textContent = "👤 " + state.currentUser;
+        $("authOverlay").style.display = "none";
+        $("appContent").style.display  = "block";
+        renderCalendar();
+      }
+    } catch (_) {
+      // network error – show login
+    }
+  })();
 })();
 </script>
 

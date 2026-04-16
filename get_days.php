@@ -1,23 +1,30 @@
 <?php
+require "auth.php";
 require "config.php";
 
+$userId = require_auth();
 header("Content-Type: application/json");
 
-$user = isset($_GET["user"]) ? trim((string)$_GET["user"]) : "";
+$stmt = $pdo->prepare("SELECT date, notes FROM gym_days WHERE user_id = ? ORDER BY date");
+$stmt->execute([$userId]);
+$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-if ($user === "" || strlen($user) > 50 || !preg_match('/^[\w\-]+$/', $user)) {
-  http_response_code(400);
-  echo json_encode(["error" => "invalid user"]);
-  exit;
+$dates = [];
+$notes = [];
+foreach ($rows as $row) {
+    $dates[] = $row['date'];
+    if ($row['notes'] !== null && $row['notes'] !== '') {
+        $notes[$row['date']] = $row['notes'];
+    }
 }
 
-$stmt = $pdo->prepare("
-  SELECT gym_date
-  FROM gym_days
-  WHERE user_name = ?
-");
+$stmtG = $pdo->prepare("SELECT monthly_goal FROM user_goals WHERE user_id = ?");
+$stmtG->execute([$userId]);
+$goal = $stmtG->fetchColumn();
 
-$stmt->execute([$user]);
-$dates = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-echo json_encode(["dates" => $dates]);
+echo json_encode([
+    'dates'         => $dates,
+    'notes'         => $notes,
+    'monthly_goal'  => $goal !== false ? (int)$goal : 12,
+    'username'      => $_SESSION['username'],
+]);

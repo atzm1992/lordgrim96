@@ -1,51 +1,36 @@
 <?php
 session_start();
+require "config.php";
 
-// Check if form submitted
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Database connection (update with your own connection details)
-    $host = 'localhost';
-    $db = 'your_database';
-    $user = 'your_username';
-    $pass = 'your_password';
+header("Content-Type: application/json");
 
-    $conn = new mysqli($host, $user, $pass, $db);
-
-    // Check connection
-    if ($conn->connect_error) {
-        die("Connection failed: " . $conn->connect_error);
-    }
-
-    // Prepare and bind
-    $stmt = $conn->prepare('SELECT password FROM users WHERE username = ?');
-    $stmt->bind_param('s', $_POST['username']);
-    $stmt->execute();
-    $stmt->store_result();
-
-    // Check if user exists
-    if ($stmt->num_rows > 0) {
-        $stmt->bind_result($hashed_password);
-        $stmt->fetch();
-
-        // Verify password using bcrypt
-        if (password_verify($_POST['password'], $hashed_password)) {
-            // Password is correct, set session variable
-            $_SESSION['username'] = $_POST['username'];
-            echo 'Login successful!';
-        } else {
-            echo 'Invalid username or password.';
-        }
-    } else {
-        echo 'Invalid username or password.';
-    }
-
-    $stmt->close();
-    $conn->close();
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['error' => 'method not allowed']);
+    exit;
 }
-?>
 
-<form method='post'>
-    <input type='text' name='username' placeholder='Username' required>
-    <input type='password' name='password' placeholder='Password' required>
-    <input type='submit' value='Login'>
-</form>
+$data = json_decode(file_get_contents("php://input"), true);
+$username = trim((string)($data['username'] ?? ''));
+$password = (string)($data['password'] ?? '');
+
+if ($username === '' || $password === '') {
+    http_response_code(400);
+    echo json_encode(['error' => 'missing credentials']);
+    exit;
+}
+
+$stmt = $pdo->prepare("SELECT id, password FROM users WHERE username = ?");
+$stmt->execute([$username]);
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$user || !password_verify($password, $user['password'])) {
+    http_response_code(401);
+    echo json_encode(['error' => 'invalid credentials']);
+    exit;
+}
+
+$_SESSION['user_id'] = (int)$user['id'];
+$_SESSION['username'] = $username;
+
+echo json_encode(['status' => 'ok', 'username' => $username]);

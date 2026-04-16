@@ -1,10 +1,10 @@
 <?php
 // config.php
 
-$DB_HOST = "localhost";
-$DB_NAME = "atzblltz_gymbro";
-$DB_USER = "atzblltz_gymbro";
-$DB_PASS = "__DB_PASSWORD__"; // wird beim Deploy durch GitHub secret DB_PASSWORD ersetzt
+$DB_HOST = "__DB_HOST__";
+$DB_NAME = "__DB_NAME__";
+$DB_USER = "__DB_USER__";
+$DB_PASS = "__DB_PASS__"; // alle Platzhalter werden beim Deploy durch die GitHub Secrets ersetzt
 
 try {
   $pdo = new PDO(
@@ -14,5 +14,10 @@ try {
     [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
   );
 } catch (PDOException $e) {
-  die("Datenbankverbindung fehlgeschlagen");
+  http_response_code(500);
+  if (!headers_sent()) {
+    header('Content-Type: application/json; charset=utf-8');
+  }
+  echo json_encode(['error' => 'database unavailable']);
+  exit;
 }

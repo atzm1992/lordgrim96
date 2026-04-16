@@ -13,42 +13,42 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Inject database password
+      - name: Inject database credentials
         env:
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASS: ${{ secrets.DB_PASS }}
         run: |
           php -r '
-            $pwd = getenv("DB_PASSWORD");
-            if ($pwd === false || $pwd === "") {
-                fwrite(STDERR, "DB_PASSWORD secret is empty or missing\n");
-                exit(1);
-            }
+            $keys = ["DB_HOST", "DB_NAME", "DB_USER", "DB_PASS"];
             $cfg = file_get_contents("config.php");
             if ($cfg === false) {
                 fwrite(STDERR, "config.php not readable\n");
                 exit(1);
             }
-            $literal = var_export($pwd, true);
-            $new = str_replace("\"__DB_PASSWORD__\"", $literal, $cfg, $count);
-            if ($count === 0) {
-                fwrite(STDERR, "placeholder \"__DB_PASSWORD__\" not found in config.php\n");
-                exit(1);
+            foreach ($keys as $key) {
+                $val = getenv($key);
+                if ($val === false || $val === "") {
+                    fwrite(STDERR, "$key secret is empty or missing\n");
+                    exit(1);
+                }
+                $placeholder = "\"__" . $key . "__\"";
+                $literal = var_export($val, true);
+                $cfg = str_replace($placeholder, $literal, $cfg, $count);
+                if ($count === 0) {
+                    fwrite(STDERR, "placeholder $placeholder not found in config.php\n");
+                    exit(1);
+                }
             }
-            file_put_contents("config.php", $new);
+            file_put_contents("config.php", $cfg);
           '
 
       - name: Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: ${{ secrets.FTP_PATH }}
           local-dir: ./
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/.github/**
-            **/node_modules/**
-            **/.DS_Store
-            **/README.md

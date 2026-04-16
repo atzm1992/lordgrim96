@@ -19,16 +19,36 @@ jobs:
         run: |
           php -r '
             $pwd = getenv("DB_PASSWORD");
+            if ($pwd === false || $pwd === "") {
+                fwrite(STDERR, "DB_PASSWORD secret is empty or missing\n");
+                exit(1);
+            }
             $cfg = file_get_contents("config.php");
-            $cfg = str_replace("__DB_PASSWORD__", $pwd, $cfg);
-            file_put_contents("config.php", $cfg);
+            if ($cfg === false) {
+                fwrite(STDERR, "config.php not readable\n");
+                exit(1);
+            }
+            $literal = var_export($pwd, true);
+            $new = str_replace("\"__DB_PASSWORD__\"", $literal, $cfg, $count);
+            if ($count === 0) {
+                fwrite(STDERR, "placeholder \"__DB_PASSWORD__\" not found in config.php\n");
+                exit(1);
+            }
+            file_put_contents("config.php", $new);
           '
 
       - name: Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: ${{ secrets.FTP_PATH }}
           local-dir: ./
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/.github/**
+            **/node_modules/**
+            **/.DS_Store
+            **/README.md

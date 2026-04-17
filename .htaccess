@@ -14,6 +14,10 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # Never redirect the ACME / SSL HTTP-Validation path — Sectigo &
+    # Let's Encrypt müssen diese Datei unverschlüsselt per HTTP abrufen.
+    RewriteCond %{REQUEST_URI} !^/\.well-known/ [NC]
+
     # Already on HTTPS? done.
     RewriteCond %{HTTPS} !=on
     # Respect load balancers that terminate TLS upstream.

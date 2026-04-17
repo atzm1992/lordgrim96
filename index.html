@@ -172,6 +172,8 @@
       border-radius: 5px;
       cursor: pointer;
       user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
       position: relative;
       font-size: 14px;
       display: flex;
@@ -464,6 +466,60 @@
       border-radius: 4px;
     }
 
+    /* ── Day action sheet ───────────────────────────────── */
+    #daySheet {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.4);
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 8889;
+    }
+
+    #daySheet.open { display: flex; }
+
+    #daySheetBox {
+      background: white;
+      width: 100%;
+      max-width: 420px;
+      border-radius: 12px 12px 0 0;
+      padding: 12px 12px max(16px, env(safe-area-inset-bottom));
+      box-shadow: 0 -4px 20px rgba(0,0,0,.15);
+      animation: slideUp .2s ease-out;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+
+    #daySheetBox .sheet-title {
+      text-align: center;
+      font-weight: bold;
+      font-size: 14px;
+      color: #666;
+      margin: 4px 0 12px;
+    }
+
+    #daySheetBox button {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      margin: 6px 0;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #eee;
+      color: #333;
+    }
+
+    #daySheetBox .primary { background: #4caf50; color: white; }
+    #daySheetBox .danger  { background: #fdecea; color: #c0392b; }
+    #daySheetBox .cancel  { background: #f5f5f5; color: #666; margin-top: 10px; }
+
     /* ── Help modal ─────────────────────────────────────── */
     #helpModal {
       display: none;
@@ -662,6 +718,16 @@
   </div>
 </div>
 
+<!-- ── Day action sheet ─────────────────────────────────── -->
+<div id="daySheet" role="dialog" aria-modal="true">
+  <div id="daySheetBox">
+    <div class="sheet-title" id="daySheetTitle">Tag bearbeiten</div>
+    <button class="primary" id="daySheetNote">📝 Notiz &amp; Training bearbeiten</button>
+    <button class="danger"  id="daySheetRemove">✕ Gym-Tag entfernen</button>
+    <button class="cancel"  id="daySheetCancel">Abbrechen</button>
+  </div>
+</div>
+
 <!-- ── Floating Action Button ──────────────────────────── -->
 <button id="fab" aria-label="Heute markieren" title="Heute markieren">+</button>
 
@@ -673,15 +739,22 @@
 
     <h4>Tage markieren</h4>
     <ul>
-      <li><strong>Klick</strong> auf einen Tag markiert ihn als Gym-Tag (grün) oder entfernt ihn wieder.</li>
+      <li><strong>Tap auf einen leeren Tag</strong> markiert ihn als Gym-Tag (grün).</li>
+      <li><strong>Tap auf einen markierten Tag</strong> öffnet ein Menü mit „Notiz bearbeiten" und „Entfernen".</li>
       <li>Zukünftige Tage können nicht markiert werden.</li>
     </ul>
 
-    <h4>Notizen hinzufügen</h4>
+    <h4>Training &amp; Notizen</h4>
     <ul>
-      <li><strong>Rechtsklick</strong> (Desktop) oder <strong>langes Drücken</strong> (Mobil) auf einen markierten Tag öffnet das Notizfeld.</li>
+      <li>Im Notiz-Dialog kannst du <strong>Trainingsarten</strong> auswählen (Brust, Rücken, Beine …),
+        die <strong>Dauer</strong> in Minuten und die <strong>Intensität</strong> (1–5 Sterne) festhalten sowie eine freie Notiz schreiben.</li>
       <li>Ein weißer Punkt auf einem Tag zeigt an, dass eine Notiz vorhanden ist.</li>
-      <li>Notizen sind z.B. nützlich, um dein Training festzuhalten (Brust, Beine, Cardio …).</li>
+      <li>Shortcut: <strong>Rechtsklick</strong> (Desktop) oder <strong>langes Drücken</strong> (Mobil) öffnet direkt den Notiz-Dialog.</li>
+    </ul>
+
+    <h4>Schnell-Aktion</h4>
+    <ul>
+      <li>Der <strong>runde + Button</strong> unten rechts markiert heute mit einem Tap. Wenn heute schon markiert ist, zeigt er ein Häkchen.</li>
     </ul>
 
     <h4>Statistiken</h4>
@@ -793,7 +866,11 @@
           toast("Zukünftige Tage können nicht markiert werden.", true);
           return;
         }
-        toggleDay(key, el);
+        if (state.gymDays.has(key)) {
+          openDaySheet(key, el);
+        } else {
+          toggleDay(key, el);
+        }
       });
 
       el.addEventListener("contextmenu", (e) => {
@@ -1119,6 +1196,32 @@
     $("noteModal").classList.remove("open");
   });
 
+  // ── Day action sheet ───────────────────────────────────
+  let daySheetKey = null;
+  let daySheetEl  = null;
+  const daySheet  = $("daySheet");
+
+  function openDaySheet(key, el) {
+    daySheetKey = key;
+    daySheetEl  = el;
+    $("daySheetTitle").textContent = key;
+    daySheet.classList.add("open");
+  }
+  function closeDaySheet() { daySheet.classList.remove("open"); }
+
+  $("daySheetNote").addEventListener("click", () => {
+    const key = daySheetKey;
+    closeDaySheet();
+    if (key) openNoteModal(key);
+  });
+  $("daySheetRemove").addEventListener("click", () => {
+    const key = daySheetKey, el = daySheetEl;
+    closeDaySheet();
+    if (key && el) toggleDay(key, el);
+  });
+  $("daySheetCancel").addEventListener("click", closeDaySheet);
+  daySheet.addEventListener("click", (e) => { if (e.target === daySheet) closeDaySheet(); });
+
   // ── Help modal ─────────────────────────────────────────
   const helpModal = $("helpModal");
   function openHelp()  { helpModal.classList.add("open"); }
@@ -1223,6 +1326,7 @@
     if (e.key === "Escape") {
       if (helpModal.classList.contains("open")) { closeHelp(); return; }
       if ($("noteModal").classList.contains("open")) { $("noteModal").classList.remove("open"); return; }
+      if (daySheet.classList.contains("open")) { closeDaySheet(); return; }
     }
 
     if (typing) return;

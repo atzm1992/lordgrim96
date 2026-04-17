@@ -3,17 +3,37 @@
 <head>
   <meta charset="UTF-8" />
   <title>Gym Kalender</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#4caf50" />
+  <meta name="description" content="Gym Kalender – Trainingstage, Streaks und Ziele verfolgen." />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Gym" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/svg+xml" href="icon.svg" />
+  <link rel="apple-touch-icon" href="icon.svg" />
 
   <style>
     *, *::before, *::after { box-sizing: border-box; }
 
+    html { -webkit-text-size-adjust: 100%; }
+
     body {
-      font-family: Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
       background: #f4f4f4;
       margin: 0;
       padding: 20px;
+      padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(80px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
       text-align: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button { font-family: inherit; }
+    button, a, .day { touch-action: manipulation; }
+
+    @media (max-width: 480px) {
+      body { padding-top: max(12px, env(safe-area-inset-top)); }
+      h1 { font-size: 1.4em; }
     }
 
     h1 { margin-bottom: 10px; }
@@ -77,8 +97,14 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 8px;
       max-width: 420px;
       margin: 0 auto 8px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 380px) {
+      .top-bar #statsLink { padding: 5px 8px; font-size: 12px; }
     }
 
     #usernameLabel { font-weight: bold; }
@@ -141,12 +167,21 @@
 
     .day {
       background: #eee;
-      padding: 10px 4px;
+      padding: 12px 4px;
+      min-height: 44px;
       border-radius: 5px;
       cursor: pointer;
       user-select: none;
       position: relative;
       font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @media (max-width: 480px) {
+      .day { padding: 14px 2px; min-height: 46px; }
+      .weekdays div { font-size: 11px; }
     }
 
     .day:hover { background: #ddd; }
@@ -258,7 +293,10 @@
       background: white;
       border-radius: 10px;
       padding: 20px;
-      width: 300px;
+      width: 100%;
+      max-width: 340px;
+      max-height: 90vh;
+      overflow-y: auto;
       box-shadow: 0 8px 30px rgba(0,0,0,.2);
     }
 
@@ -266,13 +304,78 @@
 
     #noteText {
       width: 100%;
-      height: 80px;
+      height: 70px;
       border: 1px solid #ccc;
       border-radius: 5px;
       padding: 8px;
-      font-size: 14px;
+      font-size: 16px;
       resize: none;
     }
+
+    .field-label {
+      display: block;
+      font-size: 12px;
+      color: #666;
+      margin: 10px 0 4px;
+      text-align: left;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 4px;
+    }
+
+    .chip {
+      background: #eee;
+      border: 1px solid transparent;
+      color: #333;
+      padding: 6px 10px;
+      border-radius: 16px;
+      cursor: pointer;
+      font-size: 12px;
+      user-select: none;
+      transition: background .15s, color .15s;
+    }
+
+    .chip.active {
+      background: #4caf50;
+      color: white;
+    }
+
+    .meta-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .meta-row .field { flex: 1; text-align: left; }
+
+    .meta-row input[type=number] {
+      width: 100%;
+      padding: 7px 8px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .stars {
+      display: flex;
+      gap: 4px;
+      font-size: 22px;
+      line-height: 1;
+      user-select: none;
+    }
+
+    .stars span {
+      cursor: pointer;
+      color: #ddd;
+      transition: color .1s, transform .1s;
+    }
+
+    .stars span.on    { color: #f39c12; }
+    .stars span:hover { transform: scale(1.15); }
 
     .note-btns {
       display: flex;
@@ -291,6 +394,75 @@
 
     #noteSave   { background: #4caf50; color: white; }
     #noteCancel { background: #eee; }
+
+    /* ── Floating Action Button (mobile) ────────────────── */
+    #fab {
+      position: fixed;
+      right: max(16px, env(safe-area-inset-right));
+      bottom: max(16px, env(safe-area-inset-bottom));
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: none;
+      background: #4caf50;
+      color: white;
+      font-size: 26px;
+      font-weight: bold;
+      box-shadow: 0 4px 14px rgba(0,0,0,.25);
+      cursor: pointer;
+      z-index: 100;
+      display: none;
+    }
+
+    #fab.show { display: block; }
+    #fab.done { background: #c0392b; }
+    #fab:active { transform: scale(.95); }
+
+    /* ── Category breakdown ─────────────────────────────── */
+    #breakdownSection {
+      max-width: 420px;
+      margin: 12px auto 0;
+      background: white;
+      border-radius: 8px;
+      padding: 10px 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      text-align: left;
+      font-size: 13px;
+      display: none;
+    }
+
+    #breakdownSection.show { display: block; }
+
+    #breakdownSection h5 {
+      margin: 0 0 6px;
+      font-size: 12px;
+      color: #888;
+      font-weight: normal;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+
+    .cat-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 3px 0;
+    }
+
+    .cat-row .bar {
+      flex: 1;
+      height: 8px;
+      background: #eee;
+      border-radius: 4px;
+      margin: 0 10px;
+      align-self: center;
+      overflow: hidden;
+    }
+
+    .cat-row .bar > div {
+      height: 100%;
+      background: #4caf50;
+      border-radius: 4px;
+    }
 
     /* ── Help modal ─────────────────────────────────────── */
     #helpModal {
@@ -433,6 +605,15 @@
       <div class="label">Längste Serie</div>
       <div class="value" id="statBest">0</div>
     </div>
+    <div class="stat-card">
+      <div class="label">Diese Woche</div>
+      <div class="value" id="statWeek">0</div>
+    </div>
+  </div>
+
+  <div id="breakdownSection">
+    <h5>Top Trainingsarten (Monat)</h5>
+    <div id="breakdownList"></div>
   </div>
 
   <div id="goalSection">
@@ -450,13 +631,39 @@
 <div id="noteModal">
   <div id="noteBox">
     <h4 id="noteTitle">Notiz</h4>
-    <textarea id="noteText" maxlength="500" placeholder="Was hast du trainiert? (z.B. Brust, Beine, Cardio)"></textarea>
+
+    <label class="field-label">Trainingsart</label>
+    <div class="chip-row" id="chipRow"></div>
+
+    <div class="meta-row">
+      <div class="field">
+        <label class="field-label" for="noteDuration">Dauer (min)</label>
+        <input id="noteDuration" type="number" min="0" max="600" step="5" inputmode="numeric" placeholder="z.B. 60">
+      </div>
+      <div class="field">
+        <label class="field-label">Intensität</label>
+        <div class="stars" id="noteStars" role="radiogroup" aria-label="Intensität">
+          <span data-v="1" role="radio" aria-label="1">★</span>
+          <span data-v="2" role="radio" aria-label="2">★</span>
+          <span data-v="3" role="radio" aria-label="3">★</span>
+          <span data-v="4" role="radio" aria-label="4">★</span>
+          <span data-v="5" role="radio" aria-label="5">★</span>
+        </div>
+      </div>
+    </div>
+
+    <label class="field-label" for="noteText">Notiz</label>
+    <textarea id="noteText" maxlength="500" placeholder="Freitext (optional)"></textarea>
+
     <div class="note-btns">
       <button id="noteSave">Speichern</button>
       <button id="noteCancel">Abbrechen</button>
     </div>
   </div>
 </div>
+
+<!-- ── Floating Action Button ──────────────────────────── -->
+<button id="fab" aria-label="Heute markieren" title="Heute markieren">+</button>
 
 <!-- ── Help modal ──────────────────────────────────────── -->
 <div id="helpModal" role="dialog" aria-labelledby="helpTitle" aria-modal="true">
@@ -515,6 +722,11 @@
     monthlyGoal: 12,
     currentUser: null,
   };
+
+  const CATEGORIES = [
+    "Brust", "Rücken", "Beine", "Schultern",
+    "Arme", "Bauch", "Cardio", "Ganzkörper"
+  ];
 
   const $ = (id) => document.getElementById(id);
   const pad = (n) => String(n).padStart(2, "0");
@@ -658,12 +870,107 @@
     $("statStreak").textContent = streak;
     $("statBest").textContent   = best;
 
+    // Week count: Monday-based week containing "today"
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const dow = (now.getDay() + 6) % 7; // 0 = Monday
+    const monday = new Date(now); monday.setDate(now.getDate() - dow);
+    let weekCount = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday); d.setDate(monday.getDate() + i);
+      const k = fmt(d.getFullYear(), d.getMonth() + 1, d.getDate());
+      if (state.gymDays.has(k)) weekCount++;
+    }
+    $("statWeek").textContent = weekCount;
+
     // Monthly goal
     const goal = state.monthlyGoal;
     const pct  = Math.min(100, Math.round(monthCount / goal * 100));
     $("goalLabel").textContent         = monthCount + " / " + goal + " Tage (" + pct + "%)";
     $("progressFill").style.width      = pct + "%";
     $("progressFill").style.background = pct >= 100 ? "#f39c12" : "#4caf50";
+
+    renderBreakdown(year, month);
+    updateFab();
+  }
+
+  // ── Category breakdown (top categories this month) ────
+  function renderBreakdown(year, month) {
+    const counts = {};
+    let total = 0;
+    state.gymDays.forEach((k) => {
+      const [y, m] = k.split("-").map(Number);
+      if (y !== year || m !== month) return;
+      const meta = parseNote(state.notes[k] || "");
+      meta.categories.forEach((c) => {
+        counts[c] = (counts[c] || 0) + 1;
+        total++;
+      });
+    });
+    const section = $("breakdownSection");
+    const list    = $("breakdownList");
+    if (total === 0) {
+      section.classList.remove("show");
+      list.innerHTML = "";
+      return;
+    }
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3);
+    const max = sorted[0][1];
+    list.innerHTML = sorted.map(([name, n]) => (
+      '<div class="cat-row">' +
+        '<span>' + escapeHtml(name) + '</span>' +
+        '<span class="bar"><div style="width:' + Math.round(n / max * 100) + '%"></div></span>' +
+        '<span>' + n + '×</span>' +
+      '</div>'
+    )).join("");
+    section.classList.add("show");
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => (
+      {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]
+    ));
+  }
+
+  // ── Floating action button ─────────────────────────────
+  function updateFab() {
+    const fab = $("fab");
+    const isDone = state.gymDays.has(todayKey);
+    fab.textContent = isDone ? "✓" : "+";
+    fab.classList.toggle("done", isDone);
+    fab.classList.add("show");
+  }
+
+  // ── Note encode/decode ─────────────────────────────────
+  // Format: "[cats|Nmin|N/5] freetext"  — all parts optional.
+  function parseNote(text) {
+    const result = { categories: [], duration: null, intensity: 0, free: text || "" };
+    if (!text) return result;
+    const m = text.match(/^\[([^\]]*)\]\s?([\s\S]*)$/);
+    if (!m) { result.free = text; return result; }
+    result.free = m[2];
+    const parts = m[1].split("|").map((s) => s.trim()).filter(Boolean);
+    parts.forEach((p) => {
+      const mm = p.match(/^(\d+)\s*min$/i);
+      const ms = p.match(/^(\d+)\s*\/\s*5$/);
+      if (mm) { result.duration = parseInt(mm[1], 10); }
+      else if (ms) { result.intensity = Math.max(0, Math.min(5, parseInt(ms[1], 10))); }
+      else {
+        p.split(",").map((c) => c.trim()).filter(Boolean).forEach((c) => {
+          if (CATEGORIES.includes(c)) result.categories.push(c);
+        });
+      }
+    });
+    return result;
+  }
+
+  function buildNote(categories, duration, intensity, free) {
+    const segs = [];
+    if (categories && categories.length) segs.push(categories.join(", "));
+    if (duration) segs.push(duration + "min");
+    if (intensity) segs.push(intensity + "/5");
+    const prefix = segs.length ? "[" + segs.join("|") + "] " : "";
+    return (prefix + (free || "").trim()).trim();
   }
 
   // ── Toggle day ─────────────────────────────────────────
@@ -722,18 +1029,71 @@
 
   // ── Note modal ─────────────────────────────────────────
   let noteDate = null;
+  let noteSelectedCats = new Set();
+  let noteIntensity = 0;
+
+  function buildChipRow() {
+    const row = $("chipRow");
+    row.innerHTML = "";
+    CATEGORIES.forEach((cat) => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "chip";
+      chip.textContent = cat;
+      chip.addEventListener("click", () => {
+        if (noteSelectedCats.has(cat)) {
+          noteSelectedCats.delete(cat);
+          chip.classList.remove("active");
+        } else {
+          noteSelectedCats.add(cat);
+          chip.classList.add("active");
+        }
+      });
+      row.appendChild(chip);
+    });
+  }
+
+  function renderStars() {
+    $("noteStars").querySelectorAll("span").forEach((el) => {
+      const v = parseInt(el.dataset.v, 10);
+      el.classList.toggle("on", v <= noteIntensity);
+    });
+  }
+
+  $("noteStars").querySelectorAll("span").forEach((el) => {
+    el.addEventListener("click", () => {
+      const v = parseInt(el.dataset.v, 10);
+      noteIntensity = (noteIntensity === v) ? 0 : v;
+      renderStars();
+    });
+  });
+
+  buildChipRow();
 
   function openNoteModal(key) {
     noteDate = key;
     $("noteTitle").textContent = "Notiz für " + key;
-    $("noteText").value = state.notes[key] || "";
+    const meta = parseNote(state.notes[key] || "");
+    noteSelectedCats = new Set(meta.categories);
+    noteIntensity = meta.intensity || 0;
+    $("chipRow").querySelectorAll(".chip").forEach((c) => {
+      c.classList.toggle("active", noteSelectedCats.has(c.textContent));
+    });
+    $("noteDuration").value = meta.duration || "";
+    renderStars();
+    $("noteText").value = meta.free || "";
     $("noteModal").classList.add("open");
-    $("noteText").focus();
   }
 
   $("noteSave").addEventListener("click", async () => {
     if (!noteDate) return;
-    const notes = $("noteText").value.trim();
+    const duration = parseInt($("noteDuration").value, 10);
+    const notes = buildNote(
+      Array.from(noteSelectedCats),
+      Number.isFinite(duration) && duration > 0 ? duration : null,
+      noteIntensity,
+      $("noteText").value
+    );
     try {
       const res = await fetch("save_note.php", {
         method: "POST",
@@ -818,6 +1178,8 @@
     $("authUser").value = "";
     $("authPass").value = "";
     $("authError").textContent = "";
+    $("fab").classList.remove("show");
+    $("breakdownSection").classList.remove("show");
   });
 
   // ── Navigation ─────────────────────────────────────────
@@ -832,6 +1194,24 @@
   $("todayBtn").addEventListener("click", () => {
     state.date = new Date();
     renderCalendar();
+  });
+
+  // ── FAB: toggle today ──────────────────────────────────
+  $("fab").addEventListener("click", () => {
+    // Ensure the current month is visible so the click lands on the today cell.
+    const now = new Date();
+    if (state.date.getFullYear() !== now.getFullYear() ||
+        state.date.getMonth()    !== now.getMonth()) {
+      state.date = now;
+      renderCalendar();
+    }
+    const cells = document.querySelectorAll("#calendar .day");
+    for (const el of cells) {
+      if (el.classList.contains("today")) {
+        toggleDay(todayKey, el);
+        return;
+      }
+    }
   });
 
   // ── Keyboard shortcuts ─────────────────────────────────
@@ -877,6 +1257,13 @@
       // network error – show login
     }
   })();
+
+  // ── Service Worker ─────────────────────────────────────
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    });
+  }
 })();
 </script>
 

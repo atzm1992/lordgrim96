@@ -1,0 +1,58 @@
+# Gym Kalender – Apache config
+# --------------------------------------------------------------
+# 1) HTTPS umschalten: Sobald im Namecheap-cPanel ein SSL/TLS-
+#    Zertifikat (z.B. AutoSSL / Let's Encrypt) aktiviert ist,
+#    erzwingt dieser Block HTTPS für alle Anfragen.
+#
+#    Falls du das Zertifikat noch nicht aktiviert hast:
+#      -> cPanel -> "SSL/TLS Status" -> "Run AutoSSL" (oder die
+#         "Let's Encrypt"-App, falls verfügbar).
+#      -> Danach ggf. "Domains" -> "Force HTTPS Redirect" on.
+#
+#    Bis dahin kannst du die nächsten drei Zeilen auskommentieren,
+#    indem du jeweils ein "#" davorsetzt.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Already on HTTPS? done.
+    RewriteCond %{HTTPS} !=on
+    # Respect load balancers that terminate TLS upstream.
+    RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+</IfModule>
+
+# --------------------------------------------------------------
+# 2) Sicherheitsheader
+<IfModule mod_headers.c>
+    # HSTS: Browser zwingen, HTTPS zu nutzen (nur aktiv wenn TLS schon steht).
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
+
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+</IfModule>
+
+# --------------------------------------------------------------
+# 3) Caching statischer Assets (Service Worker bleibt frisch)
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/svg+xml         "access plus 7 days"
+    ExpiresByType image/png             "access plus 7 days"
+    ExpiresByType image/jpeg            "access plus 7 days"
+    ExpiresByType application/manifest+json "access plus 1 day"
+    ExpiresByType text/css              "access plus 1 day"
+    ExpiresByType application/javascript "access plus 1 day"
+</IfModule>
+
+<FilesMatch "^(sw\.js|index\.html)$">
+    <IfModule mod_headers.c>
+        Header set Cache-Control "no-cache, must-revalidate"
+    </IfModule>
+</FilesMatch>
+
+# --------------------------------------------------------------
+# 4) Sensible Dateien schützen (Include-only, kein Browser-Zugriff)
+<FilesMatch "^(\.htaccess|\.htpasswd|\.git.*|config\.php|session_init\.php|auth\.php)$">
+    Require all denied
+</FilesMatch>

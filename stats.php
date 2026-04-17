@@ -1,6 +1,6 @@
 <?php
 // stats.php – per-user training statistics (requires login)
-session_start();
+require "session_init.php";
 require "config.php";
 
 if (empty($_SESSION['user_id'])) {

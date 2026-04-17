@@ -83,7 +83,7 @@
 
     #usernameLabel { font-weight: bold; }
 
-    #logoutBtn, #statsLink {
+    #logoutBtn, #statsLink, #helpBtn {
       padding: 5px 10px;
       cursor: pointer;
       border: 1px solid #ccc;
@@ -92,6 +92,12 @@
       font-size: 13px;
       text-decoration: none;
       color: inherit;
+    }
+
+    #helpBtn {
+      font-weight: bold;
+      width: 30px;
+      padding: 5px 0;
     }
 
     /* ── Calendar ───────────────────────────────────────── */
@@ -286,6 +292,69 @@
     #noteSave   { background: #4caf50; color: white; }
     #noteCancel { background: #eee; }
 
+    /* ── Help modal ─────────────────────────────────────── */
+    #helpModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.4);
+      align-items: center;
+      justify-content: center;
+      z-index: 8888;
+      padding: 20px;
+    }
+
+    #helpModal.open { display: flex; }
+
+    #helpBox {
+      background: white;
+      border-radius: 10px;
+      padding: 22px 24px;
+      width: 100%;
+      max-width: 440px;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 8px 30px rgba(0,0,0,.2);
+      text-align: left;
+    }
+
+    #helpBox h3 { margin-top: 0; }
+
+    #helpBox h4 {
+      margin: 16px 0 6px;
+      font-size: 14px;
+      color: #1976d2;
+    }
+
+    #helpBox p, #helpBox ul {
+      font-size: 13px;
+      line-height: 1.5;
+      margin: 4px 0;
+    }
+
+    #helpBox ul { padding-left: 20px; }
+
+    #helpBox kbd {
+      background: #eee;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      padding: 1px 5px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+
+    #helpClose {
+      width: 100%;
+      padding: 8px;
+      margin-top: 16px;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      font-weight: bold;
+      background: #4caf50;
+      color: white;
+    }
+
     /* ── Toast ──────────────────────────────────────────── */
     #toast {
       position: fixed;
@@ -329,6 +398,7 @@
   <div class="top-bar">
     <span id="usernameLabel"></span>
     <div style="display:flex;gap:6px">
+      <button id="helpBtn" title="Hilfe (?)" aria-label="Hilfe">?</button>
       <a href="stats.php" id="statsLink">📊 Statistiken</a>
       <button id="logoutBtn">Abmelden</button>
     </div>
@@ -385,6 +455,51 @@
       <button id="noteSave">Speichern</button>
       <button id="noteCancel">Abbrechen</button>
     </div>
+  </div>
+</div>
+
+<!-- ── Help modal ──────────────────────────────────────── -->
+<div id="helpModal" role="dialog" aria-labelledby="helpTitle" aria-modal="true">
+  <div id="helpBox">
+    <h3 id="helpTitle">Hilfe &amp; Anleitung</h3>
+    <p>Willkommen im <strong>Gym Kalender</strong>! Verfolge deine Trainingstage und bleibe motiviert.</p>
+
+    <h4>Tage markieren</h4>
+    <ul>
+      <li><strong>Klick</strong> auf einen Tag markiert ihn als Gym-Tag (grün) oder entfernt ihn wieder.</li>
+      <li>Zukünftige Tage können nicht markiert werden.</li>
+    </ul>
+
+    <h4>Notizen hinzufügen</h4>
+    <ul>
+      <li><strong>Rechtsklick</strong> (Desktop) oder <strong>langes Drücken</strong> (Mobil) auf einen markierten Tag öffnet das Notizfeld.</li>
+      <li>Ein weißer Punkt auf einem Tag zeigt an, dass eine Notiz vorhanden ist.</li>
+      <li>Notizen sind z.B. nützlich, um dein Training festzuhalten (Brust, Beine, Cardio …).</li>
+    </ul>
+
+    <h4>Statistiken</h4>
+    <ul>
+      <li><strong>Dieser Monat</strong>: Anzahl Gym-Tage im angezeigten Monat.</li>
+      <li><strong>🔥 Streak</strong>: Aktuelle Serie aufeinanderfolgender Trainingstage bis heute.</li>
+      <li><strong>Längste Serie</strong>: Deine beste ununterbrochene Serie aller Zeiten.</li>
+      <li><strong>Monatsziel</strong>: Fortschrittsbalken basierend auf deinem Ziel (Standard 12/Monat).</li>
+    </ul>
+
+    <h4>Navigation</h4>
+    <ul>
+      <li>Mit den Pfeilen wechselst du den Monat, mit <em>Heute</em> springst du zum aktuellen Datum.</li>
+      <li>Ausführliche Auswertungen findest du unter <em>📊 Statistiken</em>.</li>
+    </ul>
+
+    <h4>Tastenkürzel</h4>
+    <ul>
+      <li><kbd>←</kbd> / <kbd>→</kbd> – vorheriger / nächster Monat</li>
+      <li><kbd>T</kbd> – Sprung zu Heute</li>
+      <li><kbd>?</kbd> – Hilfe öffnen</li>
+      <li><kbd>Esc</kbd> – offenes Fenster schließen</li>
+    </ul>
+
+    <button id="helpClose">Verstanden</button>
   </div>
 </div>
 
@@ -473,6 +588,25 @@
         e.preventDefault();
         if (state.gymDays.has(key)) openNoteModal(key);
       });
+
+      // Long-press on touch devices to open the note modal
+      let pressTimer = null;
+      let longPressed = false;
+      el.addEventListener("touchstart", () => {
+        longPressed = false;
+        pressTimer = setTimeout(() => {
+          longPressed = true;
+          if (state.gymDays.has(key)) {
+            if (navigator.vibrate) navigator.vibrate(30);
+            openNoteModal(key);
+          }
+        }, 500);
+      }, { passive: true });
+      const cancelPress = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
+      el.addEventListener("touchend",    cancelPress);
+      el.addEventListener("touchmove",   cancelPress);
+      el.addEventListener("touchcancel", cancelPress);
+      el.addEventListener("click", (e) => { if (longPressed) { e.stopImmediatePropagation(); longPressed = false; } }, true);
 
       cal.appendChild(el);
     }
@@ -625,6 +759,17 @@
     $("noteModal").classList.remove("open");
   });
 
+  // ── Help modal ─────────────────────────────────────────
+  const helpModal = $("helpModal");
+  function openHelp()  { helpModal.classList.add("open"); }
+  function closeHelp() { helpModal.classList.remove("open"); }
+  $("helpBtn").addEventListener("click", openHelp);
+  $("helpClose").addEventListener("click", closeHelp);
+  helpModal.addEventListener("click", (e) => { if (e.target === helpModal) closeHelp(); });
+  $("noteModal").addEventListener("click", (e) => {
+    if (e.target === $("noteModal")) $("noteModal").classList.remove("open");
+  });
+
   // ── Auth ───────────────────────────────────────────────
   async function doAuth(endpoint) {
     const username = $("authUser").value.trim();
@@ -687,6 +832,26 @@
   $("todayBtn").addEventListener("click", () => {
     state.date = new Date();
     renderCalendar();
+  });
+
+  // ── Keyboard shortcuts ─────────────────────────────────
+  document.addEventListener("keydown", (e) => {
+    // Ignore shortcuts while typing in inputs/textareas
+    const tag = (e.target && e.target.tagName) || "";
+    const typing = tag === "INPUT" || tag === "TEXTAREA";
+
+    if (e.key === "Escape") {
+      if (helpModal.classList.contains("open")) { closeHelp(); return; }
+      if ($("noteModal").classList.contains("open")) { $("noteModal").classList.remove("open"); return; }
+    }
+
+    if (typing) return;
+    if ($("appContent").style.display === "none") return;
+
+    if (e.key === "?") { openHelp(); }
+    else if (e.key === "ArrowLeft")  { state.date.setMonth(state.date.getMonth() - 1); renderCalendar(); }
+    else if (e.key === "ArrowRight") { state.date.setMonth(state.date.getMonth() + 1); renderCalendar(); }
+    else if (e.key === "t" || e.key === "T") { state.date = new Date(); renderCalendar(); }
   });
 
   // ── Init: check session ────────────────────────────────

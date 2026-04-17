@@ -1,4 +1,4 @@
-const CACHE = 'gym-cache-v1';
+const CACHE = 'gym-cache-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -27,15 +27,26 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  // API / PHP endpoints: network-first, no fallback to stale data for writes.
-  if (url.pathname.endsWith('.php')) {
+  const isHtml = req.mode === 'navigate' ||
+                 url.pathname.endsWith('.html') ||
+                 url.pathname.endsWith('/');
+
+  // HTML and PHP: network-first so deployments are picked up immediately;
+  // fall back to cache when offline.
+  if (isHtml || url.pathname.endsWith('.php')) {
     e.respondWith(
-      fetch(req).catch(() => caches.match(req))
+      fetch(req).then((resp) => {
+        if (resp && resp.ok && isHtml) {
+          const clone = resp.clone();
+          caches.open(CACHE).then((c) => c.put(req, clone));
+        }
+        return resp;
+      }).catch(() => caches.match(req))
     );
     return;
   }
 
-  // Static app shell: cache-first with background update.
+  // Static assets (icons, manifest, JS, CSS): cache-first w/ background update.
   e.respondWith(
     caches.match(req).then((cached) => {
       const network = fetch(req).then((resp) => {
